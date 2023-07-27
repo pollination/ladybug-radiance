@@ -2,9 +2,9 @@ if __name__ == '__main__':
     import pathlib
     import json
 
+    import ladybug_display
     from ladybug_radiance.study.directsun import DirectSunStudy
     from ladybug_geometry.geometry3d import Vector3D, Mesh3D
-    from ladybug_display.extension.study.directsun import direct_sun_study_to_vis_set
 
     vectors_file = pathlib.Path('sun_vectors.txt')
     context_file = pathlib.Path('context_geo.json')
@@ -33,7 +33,7 @@ if __name__ == '__main__':
     )
 
     study.compute()
-    vis_set = direct_sun_study_to_vis_set(study)
+    vis_set = study.to_vis_set()
 
     output_folder = pathlib.Path('results')
     output_folder.mkdir(parents=True, exist_ok=True)
