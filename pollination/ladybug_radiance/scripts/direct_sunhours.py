@@ -4,6 +4,7 @@ if __name__ == '__main__':
 
     from ladybug_radiance.study.directsun import DirectSunStudy
     from ladybug_geometry.geometry3d import Vector3D, Mesh3D
+    from ladybug_display.extension.study.directsun import direct_sun_study_to_vis_set
 
     vectors_file = pathlib.Path('sun_vectors.txt')
     context_file = pathlib.Path('context_geo.json')
@@ -32,7 +33,7 @@ if __name__ == '__main__':
     )
 
     study.compute()
-    colored_mesh, *_ = study.draw()
+    vis_set = direct_sun_study_to_vis_set(study)
 
     output_folder = pathlib.Path('results')
     output_folder.mkdir(parents=True, exist_ok=True)
@@ -41,4 +42,4 @@ if __name__ == '__main__':
     output_file.write_text(json.dumps(study.direct_sun_hours))
 
     vsf_file = output_folder.joinpath('output.vsf')
-    vsf_file.write_text(json.dumps(colored_mesh.to_dict()))
+    vsf_file.write_text(json.dumps(vis_set.to_dict()))
