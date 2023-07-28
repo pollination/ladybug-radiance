@@ -2,9 +2,16 @@ if __name__ == '__main__':
     import pathlib
     import json
 
-    import ladybug_display
     from ladybug_radiance.study.directsun import DirectSunStudy
     from ladybug_geometry.geometry3d import Vector3D, Mesh3D
+
+    def evaluate_boolean(value):
+        if value == 'true' or value == 'True' or value is True:
+            return True
+        else:
+            return False
+
+    display_context = evaluate_boolean('{{self.display_context}}')
 
     vectors_file = pathlib.Path('sun_vectors.txt')
     context_file = pathlib.Path('context_geo.json')
@@ -33,7 +40,7 @@ if __name__ == '__main__':
     )
 
     study.compute()
-    vis_set = study.to_vis_set()
+    vis_set = study.to_vis_set(include_context=display_context)
 
     output_folder = pathlib.Path('results')
     output_folder.mkdir(parents=True, exist_ok=True)
