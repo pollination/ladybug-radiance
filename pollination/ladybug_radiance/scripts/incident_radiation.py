@@ -1,12 +1,10 @@
 if __name__ == '__main__':
-    import math
     import pathlib
     import json
-    from ladybug.viewsphere import view_sphere
+
+    from ladybug_radiance.study.radiation import RadiationStudy
     from ladybug.analysisperiod import AnalysisPeriod
     from ladybug_radiance.skymatrix import SkyMatrix
-    from ladybug_radiance.intersection import intersection_matrix
-
     from ladybug_geometry.geometry3d import Mesh3D
 
     def evaluate_boolean(value):
@@ -22,8 +20,9 @@ if __name__ == '__main__':
     avg_irr = evaluate_boolean('{{self.average_irradiance}}')
     use_benefit = evaluate_boolean('{{self.radiation_benefit}}')
     bal_temp = {{self.balance_temp}}
-    offset_dist = {{self.offset_dist}}
+    offset_distance = {{self.offset_dist}}
     run_period = AnalysisPeriod.from_string('{{self.run_period}}')
+    display_context = evaluate_boolean('{{self.display_context}}')
 
     # load geometry
     context_file = pathlib.Path('context_geo.json')
@@ -48,36 +47,23 @@ if __name__ == '__main__':
         sky_matrix = SkyMatrix.from_epw(
             'weather.epw', hoys, north, high_sky_density
         )
-    # get the direct and diffuse radiation values
-    dir_vals, diff_vals = sky_matrix.direct_values, sky_matrix.diffuse_values
-    if avg_irr:  # compute the radiation values into irradiance
-        conversion = 1000 / sky_matrix.wea_duration
-        dir_vals = tuple(v * conversion for v in dir_vals)
-        diff_vals = tuple(v * conversion for v in diff_vals)
-    # return the session state variable for the sky sphere values
-    total_sky_rad = [dir_rad + dif_rad for dir_rad, dif_rad in zip(dir_vals, diff_vals)]
-    ground_value = (sum(total_sky_rad) / len(total_sky_rad)) * ground_reflectance
-    ground_rad = [ground_value] * len(total_sky_rad)
-    sky_mtx = total_sky_rad + ground_rad
 
-    high_res = False if len(sky_mtx) == 290 else True
-    # run intersections
-    lb_vecs = view_sphere.reinhart_dome_vectors if high_res \
-        else view_sphere.tregenza_dome_vectors
-    if north != 0:
-        north_angle = math.radians(north)
-        lb_vecs = tuple(vec.rotate_xy(north_angle) for vec in lb_vecs)
-    lb_grnd_vecs = tuple(vec.reverse() for vec in lb_vecs)
-    vectors = lb_vecs + lb_grnd_vecs
-    # compute the intersection matrix
-    int_mtx = intersection_matrix(
-        vectors, study_mesh.face_centroids, study_mesh.face_normals, context_geo,
-        offset_dist, True
+    study = RadiationStudy(
+        sky_matrix=sky_matrix, study_mesh=study_mesh,
+        context_geometry=context_geo, offset_distance=offset_distance
     )
-    # calculate final results
-    values = [
-        str(sum(r * w for r, w in zip(pt_rel, sky_mtx)))
-        for pt_rel in int_mtx
-    ]
-    with open('results.txt', 'w') as outf:
-        outf.write('\n'.join(values))
+
+    study.compute()
+    vis_set = study.to_vis_set(plot_irradiance=avg_irr, include_context=display_context)
+
+    output_folder = pathlib.Path('results')
+    output_folder.mkdir(parents=True, exist_ok=True)
+
+    output_file = output_folder.joinpath('results.json')
+    if avg_irr:
+        output_file.write_text(json.dumps(study.irradiance_values))
+    else:
+        output_file.write_text(json.dumps(study.radiation_values))
+
+    vsf_file = output_folder.joinpath('output.vsf')
+    vsf_file.write_text(json.dumps(vis_set.to_dict()))

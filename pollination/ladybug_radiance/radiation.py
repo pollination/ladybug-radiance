@@ -75,8 +75,20 @@ class IncidentRadiation(Function):
         'format.', path='context_geo.json', optional=True
     )
 
+    display_context = Inputs.bool(
+        description='Boolean to note whether the context geometry should be included '
+        'in the output visualization.',
+        default=False
+    )
+
     @script
     def run_incident_radiation(self):
         return inspect.getsource(incident_radiation)
 
-    radiation_values = Outputs.file(description='Radiation values', path='results.txt')
+    radiation_values = Outputs.file(
+        description='Radiation values', path='results/results.json'
+    )
+
+    visualization_set = Outputs.file(
+        description='Results visualization set', path='results/output.vsf'
+    )

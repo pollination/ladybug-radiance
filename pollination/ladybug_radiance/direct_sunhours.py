@@ -34,6 +34,12 @@ class DirectSunHours(Function):
         'format.', path='context_geo.json', optional=True
     )
 
+    display_context = Inputs.bool(
+        description='Boolean to note whether the context geometry should be included '
+        'in the output visualization.',
+        default=False
+    )
+
     @script
     def run_direct_sunlight(self):
         return inspect.getsource(direct_sunhours)
